@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class ShowService
+  # Get show and details
   def self.get_show_and_channel_detail(show_id)
     show_detail = Show.joins(:channel).where(id: show_id).first
     {

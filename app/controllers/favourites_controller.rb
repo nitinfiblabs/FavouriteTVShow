@@ -24,17 +24,23 @@ class FavouritesController < ApplicationController
   # POST /favourites
   # POST /favourites.json
   def create
-    @favourite = Favourite.new(show_id: favourite_params)
-    @favourite.user_id = current_user.id
-    show_detail = ShowService.get_show_and_channel_detail(@favourite.show_id)
-    respond_to do |format|
-      if @favourite.save
-        FavouriteMailer.delay(run_at: show_detail[:show_time].to_time - 30.minutes).send_reminder(current_user.email, show_detail)
-        format.html { redirect_to root_path, notice: 'Favourite was successfully created.' }
-        format.json { render :show, status: :created, location: @favourite }
-      else
-        format.html { render :new }
-        format.json { render json: @favourite.errors, status: :unprocessable_entity }
+    check_favourite = Search::Favourite.check_if_already_favourite(params[:show_id].to_i, current_user.id)
+    if check_favourite
+      flash[:notice] = 'Favourite already Created.'
+      redirect_to root_path
+    else
+      @favourite = Favourite.new(show_id: favourite_params)
+      @favourite.user_id = current_user.id
+      show_detail = ShowService.get_show_and_channel_detail(@favourite.show_id)
+      respond_to do |format|
+        if @favourite.save
+          FavouriteMailer.delay(run_at: show_detail[:show_time].to_time - 30.minutes).send_reminder(current_user.email, show_detail)
+          format.html { redirect_to root_path, notice: 'Favourite was successfully created.' }
+          format.json { render :show, status: :created, location: @favourite }
+        else
+          format.html { render :new }
+          format.json { render json: @favourite.errors, status: :unprocessable_entity }
+        end
       end
     end
   end
